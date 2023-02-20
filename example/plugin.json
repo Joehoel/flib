@@ -1,0 +1,12 @@
+{
+  "ID": "4a7a4873-3a68-487d-9203-34e65244c3c9",
+  "ActionKeyword": "ex",
+  "Name": "Example",
+  "Description": "Example plugin for Flow Launcher",
+  "Author": "Joël Kuijper",
+  "Version": "0.0.1",
+  "Language": "TypeScript",
+  "ExecuteFileName": "./main.js",
+  "Website": "https://github.com/Joehoel/flow-launcher",
+  "IcoPath": "./assets/npm.png"
+}

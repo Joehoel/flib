@@ -1,0 +1,19 @@
+{
+  "name": "example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc --watch"
+  },
+  "author": "Joehoel",
+  "license": "ISC",
+  "dependencies": {
+    "flow-launcher": "../",
+    "open": "^8.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.14.0",
+    "typescript": "^4.9.5"
+  }
+}
