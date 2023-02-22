@@ -1,131 +1,77 @@
 import invariant from "./lib/invariant";
+import {
+  Awaitable,
+  ReceivedEvents,
+  EventObjectSignature,
+  Options,
+  PluginData,
+  EmittedEvents,
+  RPCResponse,
+  FlowEvent,
+} from "./types";
 
-type Prettify<T> = { [K in keyof T]: T[K] } & {};
-
-// TODO: Use this
-const methods: Partial<Record<keyof PluginEvents<{}>, `Flow.Launcher.${string}`>> = {
-  "change-query": "Flow.Launcher.ChangeQuery",
-  "check-update": "Flow.Launcher.CheckForNewUpdate",
-  "close-app": "Flow.Launcher.CloseApp",
-  "copy-to-clipboard": "Flow.Launcher.CopyToClipboard",
-  "hide-app": "Flow.Launcher.HideApp",
-  "open-settings": "Flow.Launcher.OpenSettingsDialog",
-  "save-settings": "Flow.Launcher.SaveSettings",
-  "get-plugins": "Flow.Launcher.GetAllPlugins",
-  "reload-plugins": "Flow.Launcher.ReloadAllPlugins",
-  "restart-app": "Flow.Launcher.RestartApp",
-  "shell-run": "Flow.Launcher.ShellRun",
-  "show-app": "Flow.Launcher.ShowApp",
-  "start-loading": "Flow.Launcher.StartLoadingBar",
-  "stop-loading": "Flow.Launcher.StopLoadingBar",
-};
-
-type EmittedEvents<CustomEvents extends Record<string, PluginParameters>> = {
-  query: [query: string];
-  "context-menu": [value: number];
-} & CustomEvents;
-
-type PluginEvents<CustomEvents extends Record<string, PluginParameters>> = {
-  "change-query": [query: string, requery: boolean];
-  "context-menu": unknown[];
-  "restart-app": never[];
-  "save-settings": never[];
-  "check-update": never[];
-  "shell-run": [command: string];
-  "close-app": never[];
-  "hide-app": never[];
-  "show-app": never[];
-  "open-settings": never[];
-  "start-loading": never[];
-  "stop-loading": never[];
-  "get-plugins": never[];
-  "reload-plugins": never[];
-  "copy-to-clipboard": [value: string];
-} & EmittedEvents<CustomEvents>;
-
-type Awaitable<T> = T | PromiseLike<T>;
-
-type PluginParameters = Array<string | number | boolean>;
-
-type RPCResponse<Events, Event extends keyof Events> = {
-  title: string;
-  subtitle?: string;
-  event?: Event;
-  parameters?: Events[Event];
-  context?: PluginParameters;
-  dontHideAfterAction?: boolean;
-  score?: number;
-  icon?: string;
-};
-
-type PluginData<Events, Settings> = {
-  method: keyof Events;
-  parameters: Events[keyof Events];
-  settings: Settings;
-};
-
-type Options = {
-  args?: string;
-  icon?: string;
-};
-
-export class Flow<
-  Events extends Record<string, PluginParameters> = {},
-  Settings = Record<string, unknown>
-> {
+export class Flow<Events extends EventObjectSignature, Settings = Record<string, unknown>> {
   // We pass `never` here because we cant possibly know what it is at compile time
-  private readonly data: PluginData<PluginEvents<Events>, Settings>;
-  private events = {} as Record<keyof PluginEvents<Events>, () => void>;
+  private readonly data: PluginData<EmittedEvents<Events>, Settings>;
+  private events = {} as Record<keyof EmittedEvents<Events>, () => void>;
   public icon?: string;
+
+  // @ts-ignore
+  private methods: Record<keyof EmittedEvents<Events>, FlowEvent> = {
+    "change-query": "Flow.Launcher.ChangeQuery",
+    "shell-run": "Flow.Launcher.ShellRun",
+    "copy-to-clipboard": "Flow.Launcher.CopyToClipboard",
+    "restart-app": "Flow.Launcher.RestartApp",
+    "save-settings": "Flow.Launcher.SaveAppAllSettings",
+    "check-update": "Flow.Launcher.CheckForNewUpdate",
+    "close-app": "Flow.Launcher.CloseApp",
+    "hide-app": "Flow.Launcher.HideApp",
+    "show-app": "Flow.Launcher.ShowApp",
+    "open-settings": "Flow.Launcher.OpenSettings",
+    "start-loading": "Flow.Launcher.StartLoadingBar",
+    "stop-loading": "Flow.Launcher.StopLoadingBar",
+    "get-plugins": "Flow.Launcher.GetPlugins",
+    "reload-plugins": "Flow.Launcher.ReloadPlugins",
+  };
 
   constructor({ args, icon }: Options) {
     this.icon = icon;
 
-    if (!args) {
-      if (typeof global.process !== "undefined" && process.argv[2]) {
-        // We're in Node.js and have a command line argument
-        this.data = JSON.parse(process.argv[2]);
-      } else {
-        // We're not in Node.js, so we can't read command line arguments
-        throw new Error("Couldn't connect to JSON-RPC. Is this running in Node.js?");
-      }
-    } else {
-      this.data = JSON.parse(args);
-    }
+    this.data = JSON.parse(args);
   }
 
-  public on<K extends keyof EmittedEvents<Events>>(
+  public on<K extends keyof ReceivedEvents<Events>>(
     event: K,
-    listener: (parameters: EmittedEvents<Events>[K]) => Awaitable<void>
+    listener: (parameters: ReceivedEvents<Events>[K]) => Awaitable<void>
   ): this {
     invariant(this.data?.parameters, "Parameters not defined");
 
     this.events[event] = listener.bind(
       this,
-      this.data.parameters as unknown as EmittedEvents<Events>[K]
+      this.data.parameters as unknown as ReceivedEvents<Events>[K]
     );
 
     return this;
   }
 
-  public emit<K extends keyof PluginEvents<Events>>(
+  public emit<K extends keyof EmittedEvents<Events>>(
     event: K,
-    parameters: PluginEvents<Events>[K]
+    parameters?: EmittedEvents<Events>[K]
   ): this {
-    const params = Object.values(parameters);
+    const method = this.methods[event];
 
     console.log(
       JSON.stringify({
-        method: event,
-        parameters: params,
+        method,
+        parameters: parameters || [],
       })
     );
 
     return this;
   }
 
-  public show<E extends keyof PluginEvents<Events>>(
-    ...results: RPCResponse<PluginEvents<Events>, E>[]
+  public show<E extends keyof EmittedEvents<Events>>(
+    ...results: RPCResponse<EmittedEvents<Events>, E>[]
   ) {
     const result = results.map(
       ({ title, context, dontHideAfterAction, event, icon, parameters, subtitle, score }) => {
@@ -167,3 +113,23 @@ export class Flow<
     method in this.events && this.events[method]();
   }
 }
+
+// const plugin = new Flow({
+//   args: JSON.stringify({ method: "query", parameters: ["npm hello world"] }),
+// });
+
+// plugin.on("query", ([query]) => {
+//   plugin.show({
+//     event: "change-query",
+//     parameters: ["hello world", true],
+//     title: "hello world",
+//   });
+// });
+
+// plugin.on("hello", ([num]) => {
+//   console.log("Number", num);
+// });
+
+// plugin.emit("check-update");
+
+// plugin.run();

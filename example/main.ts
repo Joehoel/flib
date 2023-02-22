@@ -16,23 +16,34 @@ const plugin = new Flow<{ open: [url: string] }>({
 plugin.on("query", ([query]) => {
   plugin.show({
     title: "Hello World",
-    subtitle: "dowiahdhwoaidhwa",
-    event: "open",
-    parameters: [query],
-  });
-});
-
-plugin.on("open", ([value]) => {
-  open("https://google.com");
-});
-
-plugin.on("context-menu", () => {
-  plugin.show({
-    title: "Context menu",
-    subtitle: "hello context menu",
+    subtitle: query,
     event: "open",
     parameters: ["https://google.com"],
   });
 });
+
+// plugin.on("query", ([query]) => {
+//   plugin.show({
+//     title: "Hello World",
+//     subtitle: query,
+//     event: "open",
+//     parameters: ["https://google.com"],
+//   });
+// });
+
+// plugin.on("open", ([url]) => {
+//   plugin.emit("open-settings");
+
+//   // open(url);
+// });
+
+// plugin.on("context-menu", () => {
+//   plugin.show({
+//     title: "Context menu",
+//     subtitle: "hello context menu",
+//     event: "open",
+//     parameters: ["https://google.com"],
+//   });
+// });
 
 plugin.run();

@@ -6,7 +6,7 @@
   "Author": "Joël Kuijper",
   "Version": "0.0.1",
   "Language": "TypeScript",
-  "ExecuteFileName": "./main.js",
+  "ExecuteFileName": "./dist/main.js",
   "Website": "https://github.com/Joehoel/flow-launcher",
   "IcoPath": "./assets/npm.png"
 }
